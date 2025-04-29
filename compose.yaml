@@ -1,0 +1,211 @@
+version: "3.8"
+services:
+  #  sba:
+  #    container_name: sba
+  #    build:
+  #      context: .
+  #    ports:
+  #      - "8080:8080"    # App port
+  #      - "9010:9010"    # JMX port for VisualVM
+  #    environment:
+  #      - SPRING_PROFILES_ACTIVE=dev
+  #      - TOMCAT_MAX_THREADS=500
+  #      - TOMCAT_MAX_CONNECTIONS=10000
+  #      - TOMCAT_ACCEPT_COUNT=200
+  #      - TOMCAT_CONNECTION_TIMEOUT=30000
+  #      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mydatabase
+  #      - SPRING_DATASOURCE_USERNAME=myuser
+  #      - SPRING_DATASOURCE_PASSWORD=secret
+  #      - SPRING_DATASOURCE_DRIVER-CLASS-NAME=org.postgresql.Driver
+  #    deploy:
+  #      resources:
+  #        limits:
+  #          cpus: "2"
+  #          memory: "1g"
+  #        reservations:
+  #          cpus: "1"
+  #          memory: "512m"
+  #    volumes:
+  #      - "./docker/tmp-hprof:/tmp"
+
+  #  light-message:
+  #    image: docker.io/library/light-message:0.0.1-SNAPSHOT
+  #    container_name: nsba
+  #    ports:
+  #      - "8080:8080"
+  #    environment:
+  #      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mydatabase
+  #      - SERVER_TOMCAT_THREADS_MAX=4
+  #      - SPRING_DATA_JPA_REPOSITORIES_BOOTSTRAP_MODE=lazy
+
+  postgres:
+    container_name: postgres
+    image: "postgres:17.2"
+    environment:
+      - "POSTGRES_DB=mydatabase"
+      - "POSTGRES_PASSWORD=secret"
+      - "POSTGRES_USER=myuser"
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "3.0"
+
+  #  schema-registry:
+  #    image: confluentinc/cp-schema-registry:7.5.0
+  #    depends_on:
+  #      - kafka
+  #    environment:
+  #      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'PLAINTEXT://kafka:9092'
+  #      SCHEMA_REGISTRY_HOST_NAME: 'schema-registry'
+  #      SCHEMA_REGISTRY_LISTENERS: 'http://0.0.0.0:8085'
+  #      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: 'INFO'
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # Cổng RabbitMQ
+      - "15672:15672" # Cổng giao diện quản lý web
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    deploy:
+      resources:
+        limits:
+          memory: 256M # Giới hạn bộ nhớ tối đa
+          cpus: "2.0" # Giới hạn sử dụng CPU (1 CPU)
+  #  k6:
+  #    container_name: k6
+  #    image: grafana/k6:latest
+  #    environment:
+  #      BASE_URL: "http://sba:8080/api/v1"
+  #    volumes:
+  #      - ./k6/:/scripts/:ro
+  #
+  #    command: run /scripts/send_message.js
+
+    redis:
+      image: redis:6.2
+      container_name: redis
+      ports:
+        - "6379:6379"
+
+ 
+    prometheus:
+      image: prom/prometheus:latest
+      container_name: prometheus
+      ports:
+        - "9090:9090"
+      volumes:
+        - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      command:
+        - --config.file=/etc/prometheus/prometheus.yml
+      networks:
+        - cloudflare
+
+      
+ 
+    grafana:
+      image: grafana/grafana-oss:latest
+      container_name: grafana
+      ports:
+        - "3000:3000"
+      environment:
+        - GF_SECURITY_ADMIN_USER=admin
+        - GF_SECURITY_ADMIN_PASSWORD=admin
+      depends_on:
+        - prometheus
+      volumes:
+        - grafana-data:/var/lib/grafana
+        - ./docker/grafana/datasources/:/etc/grafana/provisioning/datasources/
+        - ./docker/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+        - ./docker/grafana/dashboards:/var/lib/grafana/dashboards
+      networks:
+        - cloudflare
+
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web UI
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - cloudflare
+
+  nexus:
+    image: sonatype/nexus3:3.79.1
+    container_name: nexus
+    restart: unless-stopped
+    ports:
+      - "8081:8081" # Nexus UI & HTTP API
+      - "5000:5000" # Docker registry port
+    environment:
+      - NEXUS_SECURITY_RANDOMPASSWORD=false
+      - NEXUS_ADMIN_PASSWORD=Admin123 # change this!
+    volumes:
+      - nexus-data:/nexus-data
+    networks:
+      - cloudflare
+
+  jenkins:
+    container_name: jenkins
+    image: jenkins/jenkins:lts
+    user: root # 💥 Quan trọng: để có quyền truy cập docker.sock
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    networks:
+      - cloudflare
+    cap_add:
+      - NET_BIND_SERVICE
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.4.0 # ghim phiên bản mới nhất ổn định
+    container_name: cloudflared
+    restart: unless-stopped
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN} # đặt trong file .env để khỏi lộ token
+    command: tunnel run # mặc định
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cloudflare
+
+  jenkins-agent:
+    image: jenkins/inbound-agent:latest
+    environment:
+      JENKINS_URL: https://jenkins.huyvu.asia/
+      JENKINS_AGENT_NAME: docker-agent
+      JENKINS_SECRET: ${JENKINS_SECRET}
+      JENKINS_WEB_SOCKET: "true"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - agent-workdir:/home/jenkins
+
+volumes:
+  grafana-data:
+  nexus-data:
+  minio_data:
+  jenkins_home:
+  agent-workdir:
+
+networks:
+  cloudflare:
+
