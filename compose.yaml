@@ -204,6 +204,18 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - agent-workdir:/home/jenkins
 
+  zerotier-nsd:
+    image: zerotier/zeronsd:latest
+    container_name: zerotier-nsd
+    restart: unless-stopped
+    environment:
+      - ZEROTIER_CENTRAL_TOKEN=${ZEROTIER_CENTRAL_TOKEN}
+      - ZEROTIER_NETWORK_ID=${ZEROTIER_NETWORK_ID}
+    volumes:
+      - zeronsd-data:/var/lib/zeronsd
+    networks:
+      - cloudflare
+
 volumes:
   grafana-data:
   nexus-data:

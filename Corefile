@@ -1,0 +1,10 @@
+. {
+  hosts {
+    10.147.19.210 xeon.zt
+    fallthrough
+  }
+  forward . 1.1.1.1
+  log
+  errors
+}
+
