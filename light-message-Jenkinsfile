@@ -1,0 +1,30 @@
+
+pipeline {
+    agent { label 'graalvm-native-image' }
+
+    stages {
+        stage('Build') {
+            steps {
+                // Get some code from a GitHub repository
+                git url: 'https://github.com/huyvu8051/light-message.git', branch: 'master', credentialsId: 'my-git-credentials'
+
+                // Run Maven on a Unix agent.
+                withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'MAVEN_USERNAME', passwordVariable: 'MAVEN_PASSWORD')]) {
+                    sh "mvn -Dmaven.test.failure.ignore=true clean package -s settings.xml"
+                }
+
+                // To run Maven on a Windows agent, use
+                // bat "mvn -Dmaven.test.failure.ignore=true clean package"
+            }
+
+            post {
+                // If Maven was able to run the tests, even if some of the test
+                // failed, record the test results and archive the jar file.
+                success {
+                    // junit '**/target/surefire-reports/TEST-*.xml'
+                    archiveArtifacts 'target/*.jar'
+                }
+            }
+        }
+    }
+}
