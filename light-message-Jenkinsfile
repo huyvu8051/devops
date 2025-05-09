@@ -18,6 +18,7 @@ pipeline {
                     sh 'docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"'
                     sh "docker push huyvu8051/light-message-native:latest"
                 }
+                sh 'curl -X GET https://api.render.com/deploy/srv-d0etruemcj7s7387v980?key=WU5nW2vD3fY'
                
                 }
 
