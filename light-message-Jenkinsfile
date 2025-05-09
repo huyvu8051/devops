@@ -13,7 +13,7 @@ pipeline {
             steps {
                 // Run Maven on a Unix agent.
                 withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'MAVEN_USERNAME', passwordVariable: 'MAVEN_PASSWORD')]) {
-                    sh "mvn clean -DskipTests -Pnative -Dspring-boot.build-image.imageName=light-message-native:latest spring-boot:build-image -s settings.xml"
+                    sh "mvn clean -DskipTests -Pnative -Dspring-boot.build-image.imageName=light-message-native:latest spring-boot:build-image -s settings.xml -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSSZ"
                 }
             }
         }
