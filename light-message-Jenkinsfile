@@ -10,12 +10,16 @@ pipeline {
 
                 // Run Maven on a Unix agent.
                 withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'MAVEN_USERNAME', passwordVariable: 'MAVEN_PASSWORD')]) {
-                    sh "mvn -Dmaven.test.failure.ignore=true clean package -s settings.xml"
+                    sh "mvn clean -DskipTests -Pnative spring-boot:build-image -s settings.xml"
                 }
-
-                // To run Maven on a Windows agent, use
-                // bat "mvn -Dmaven.test.failure.ignore=true clean package"
-            }
+                
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh "docker tag light-message-native huyvu8051/light-message-native:latest"
+                    sh 'docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"'
+                    sh "docker push huyvu8051/light-message-native:latest"
+                }
+               
+                }
 
             post {
                 // If Maven was able to run the tests, even if some of the test
