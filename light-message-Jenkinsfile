@@ -1,35 +1,46 @@
-
 pipeline {
     agent { label 'graalvm-native-image' }
 
     stages {
-        stage('Build') {
+        stage('Clone Repository') {
             steps {
                 // Get some code from a GitHub repository
                 git url: 'https://github.com/huyvu8051/light-message.git', branch: 'master', credentialsId: 'my-git-credentials'
+            }
+        }
 
+        stage('Build Image') {
+            steps {
                 // Run Maven on a Unix agent.
                 withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'MAVEN_USERNAME', passwordVariable: 'MAVEN_PASSWORD')]) {
                     sh "mvn clean -DskipTests -Pnative -Dspring-boot.build-image.imageName=light-message-native:latest spring-boot:build-image -s settings.xml"
                 }
-                
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh "docker tag light-message-native huyvu8051/light-message-native:latest"
                     sh 'docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"'
                     sh "docker push huyvu8051/light-message-native:latest"
                 }
-                sh 'curl -X GET https://api.render.com/deploy/srv-d0etruemcj7s7387v980?key=WU5nW2vD3fY'
-               
-                }
+            }
+        }
 
-            post {
-                // If Maven was able to run the tests, even if some of the test
-                // failed, record the test results and archive the jar file.
-                success {
-                    // junit '**/target/surefire-reports/TEST-*.xml'
-                    archiveArtifacts 'target/*.jar'
-                }
+        stage('Trigger Render Deployment') {
+            steps {
+                sh 'curl -X GET https://api.render.com/deploy/srv-d0etruemcj7s7387v980?key=WU5nW2vD3fY'
             }
         }
     }
+
+    post {
+        success {
+            // junit '**/target/surefire-reports/TEST-*.xml'
+
+            archiveArtifacts 'target/*.jar'
+        }
+    }
 }
+
