@@ -1,15 +1,16 @@
-# Use the official Maven image with JDK 21
+# Use Maven image with JDK 21 from SAP
 FROM maven:3.9.9-sapmachine-21
 
-# Verify Maven and Java version
-RUN java -version && mvn -version
+# Install Git and Docker client
+RUN apt-get update && apt-get install -y \
+  git \
+  docker.io \
+  && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /workspace
 
-# Optionally, copy your source code here
-# COPY . /app
+# Set the default command to bash
+CMD ["bash"]
 
-# Default command (can be customized based on your project)
-CMD ["sh"]
 
