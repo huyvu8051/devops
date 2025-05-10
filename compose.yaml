@@ -136,27 +136,6 @@ services:
     networks:
       - cloudflare
 
-
-# start keycloak
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:23.0.1
-    container_name: keycloak
-    environment:
-      KC_DB: dev-mem
-      KC_HOSTNAME: keycloak.huyvu.asia
-      KC_HTTP_ENABLED: 'true'
-      KC_HTTP_PORT: 8080
-      KEYCLOAK_ADMIN : admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    # ports:
-    #  - 8085:8080
-    command:
-      - start-dev
-    networks:
-      - cloudflare
-# end keycloak
-
   minio:
     image: minio/minio:latest
     container_name: minio
