@@ -1,0 +1,45 @@
+pipeline {
+    agent { label 'graalvm-native-image' }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                // Get code from the tiptalk GitHub repository
+                git url: 'https://github.com/huyvu8051/tiptalk.git', branch: 'main', credentialsId: 'my-git-credentials'
+            }
+        }
+
+        stage('Build Image') {
+            steps {
+                // Change to the tiptalk-back directory where the Spring Boot project is located
+                dir('tiptalk-back') {
+                    // Run Maven on a Unix agent with credentials for Nexus
+                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'MAVEN_USERNAME', passwordVariable: 'MAVEN_PASSWORD')]) {
+                        sh "mvn clean -Pnative -Dspring-boot.build-image.imageName=tiptalk-native:latest spring-boot:build-image -s settings.xml -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSSZ"
+                    }
+                }
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh "docker tag tiptalk-native:latest huyvu8051/tiptalk-native:latest"
+                    sh 'docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"'
+                    sh "docker push huyvu8051/tiptalk-native:latest"
+                }
+            }
+        }
+
+    }
+
+    post {
+        success {
+            // Archive test results and artifacts from the tiptalk-back directory
+            dir('tiptalk-back') {
+                junit 'target/surefire-reports/TEST-*.xml'
+                archiveArtifacts 'target/*.jar'
+            }
+        }
+    }
+}
