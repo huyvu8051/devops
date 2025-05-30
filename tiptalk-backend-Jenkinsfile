@@ -13,7 +13,7 @@ pipeline {
             steps {
                 // Change to the tiptalk-back directory where the Spring Boot project is located
                 dir('tiptalk-back') {
-                    h "mvn clean -Pnative -Dspring-boot.build-image.imageName=tiptalk-native:latest spring-boot:build-image -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSSZ"
+                    sh "mvn clean -Pnative -Dspring-boot.build-image.imageName=tiptalk-native:latest spring-boot:build-image -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSSZ"
                 }
             }
         }
