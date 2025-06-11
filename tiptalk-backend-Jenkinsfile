@@ -52,6 +52,7 @@ pipeline {
         stage('Trigger Render Deployment') {
             steps {
                 sh 'curl -X GET https://api.render.com/deploy/srv-d0etruemcj7s7387v980?key=WU5nW2vD3fY'
+                sh 'curl -X GET https://api.render.com/deploy/srv-d151cq3e5dus7395ib60?key=_Bi7X--llVY'
             }
         }
     }
