@@ -33,7 +33,7 @@ pipeline {
                 sh 'curl -X GET https://api.render.com/deploy/srv-d0etruemcj7s7387v980?key=WU5nW2vD3fY'
             }
         }
-
+    }
     post {
         success {
             // Archive test results and artifacts from the tiptalk-back directory
