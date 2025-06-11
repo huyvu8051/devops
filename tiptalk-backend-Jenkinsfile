@@ -26,8 +26,8 @@ pipeline {
                         dir('tiptalk-front') {
                             // Build Angular project and create Docker image
                             sh '''
-                                npm install
-                                npm run build --prod
+                                npm i --loglevel verbose
+                                npm run build --verbose
                                 docker build -t huyvu8051/tiptalk-front:latest .
                             '''
                         }
