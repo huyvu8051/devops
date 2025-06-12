@@ -36,6 +36,31 @@ pipeline {
             }
         }
 
+        stage('Prepare and Push Frontend Artifacts to GitHub') {
+            steps {
+                dir('tiptalk-front/dist/tiptalk-front/browser') {
+                    // Copy index.html to 404.html
+                    sh 'cp index.html 404.html'
+                    
+                    // Create CNAME file with content
+                    sh 'echo "tiptalk.huyvu.asia" > CNAME'
+                    
+                    // Configure Git and force push to tiptalk-front-ghp repository
+                    withCredentials([usernamePassword(credentialsId: 'my-git-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                        sh '''
+                            git init
+                            git config user.name "Jenkins"
+                            git config user.email "jenkins@ci-server"
+                            git add .
+                            git commit -m "Deploy frontend artifacts to GitHub Pages"
+                            git remote add origin https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/huyvu8051/tiptalk-front-ghp.git
+                            git push --force origin HEAD:main
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Docker Push') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
@@ -63,7 +88,7 @@ pipeline {
                 junit 'target/surefire-reports/TEST-*.xml'
                 archiveArtifacts 'target/*.jar'
             }
-            // Optionally archive Angular build artifacts
+            // Archive Angular build artifacts
             dir('tiptalk-front') {
                 archiveArtifacts 'dist/**/*'
             }
