@@ -4,17 +4,17 @@ credentials:
     - credentials:
       - usernamePassword:
           id: "my-git-credentials"
-          password: "{AQAAABAAAABgtXpl9SX+Vin8+5cHklj67EMNiu/bdi3og3BnSHO6xMidYpSPtrv0JVOxK9pDa5wk9vstx0mL7UcQCqqaxsa9TfNwgvNnrDDHPexydiC7u16XOnQ6Ay+JGuChlFeQ+1IC1F3m8NsIDaXh4qCzcpOQOA==}"
+          password: "{AQAAABAAAABgVAXxB/9h7jDP/Wp9iWqSjdzN/wZIeL5a1VA99EEvTpiwJjspPzQSj0i7aOSWcbAZxqZ7p8M3l+ejWAJHqRGjdFMjO5vHZJ3mKJNL7DxDpb8cr7UsR6giO8EzaYfn4Gp0v9o4sDbtphvKAqDd+F8cnw==}"
           scope: GLOBAL
           username: "huyvu8051"
       - usernamePassword:
           id: "nexus-credentials"
-          password: "{AQAAABAAAAAQMMVA9ez0D/H/MczrVTMvD45zKzqadsJYe2OdJWeI4cw=}"
+          password: "{AQAAABAAAABAu0+ye/jfaN7GJcfkKQw7FW+6Cw1kB6sI8btZiIr//rabIx9m2KhpU4rdmapf4oM3QXJgu3LlPPi+/MRXORrNyOO5nRFU3kzjg2tRL1PnZCQ=}"
           scope: GLOBAL
           username: "huyvu8051"
       - usernamePassword:
           id: "docker-credentials"
-          password: "{AQAAABAAAAAwFz97DntFmLiHBTEO0lGRLZbtfHhsU71CxCMoxcFed2GNqj+qsC+4TLpq8Ulfuf1tZveugN4PkFpmBL+A3q0yAw==}"
+          password: "{AQAAABAAAAAw2eR+HOQeCJsIYBLYGpzmuKmH4sjwDI8nN87vi3FvPakdFTjXqzZs+1DQJtz8JJtLLTi1hRN783pZ4H87KYSM4w==}"
           scope: GLOBAL
           username: "huyvu8051"
 jenkins:
@@ -34,13 +34,15 @@ jenkins:
         dockerTemplateBase:
           cpuPeriod: 0
           cpuQuota: 0
-          image: "huyvu8051/maven-jdk21-git:latest"
+          image: "huyvu8051/tiptalk-build-webapp:latest"
           mounts:
           - "type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock"
-          - "type=bind,source=/root/.m2,destination=/root/.m2"
+          - "type=volume,source=maven_cache,destination=/home/jenkins/.m2"
+          - "type=volume,source=npm_cache,destination=/home/jenkins/.npm"
           mountsString: |-
             type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
-            type=bind,source=/root/.m2,destination=/root/.m2
+            type=volume,source=maven_cache,destination=/home/jenkins/.m2
+            type=volume,source=npm_cache,destination=/home/jenkins/.npm
         labelString: "graalvm-native-image"
         pullStrategy: PULL_ALWAYS
         pullTimeout: 300
@@ -54,7 +56,8 @@ jenkins:
   - "jenkins.diagnostics.ControllerExecutorsAgents"
   labelAtoms:
   - name: "built-in"
-  - name: "docker-00007pix3qqe9"
+  - name: "docker-00001fdde7fcz"
+  - name: "docker-00001fg4nn1w0"
   - name: "graalvm-native-image"
   markupFormatter: "plainText"
   mode: NORMAL
@@ -139,6 +142,8 @@ unclassified:
     - "jobBuildDiscarder"
   buildStepOperation:
     enabled: false
+  casCGlobalConfig:
+    configurationPath: "https://raw.githubusercontent.com/huyvu8051/devops/refs/heads/main/jenkins.yaml"
   email-ext:
     adminRequiredForTemplateTesting: false
     allowUnregisteredEnabled: false
