@@ -27,7 +27,7 @@ pipeline {
                             // Build Angular project and create Docker image
                             sh '''
                                 npm i --loglevel verbose
-                                npm run build --verbose
+                                npm run build --verbose --prod
                                 docker build -t huyvu8051/tiptalk-front:latest .
                             '''
                         }
