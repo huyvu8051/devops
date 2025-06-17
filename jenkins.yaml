@@ -4,17 +4,17 @@ credentials:
     - credentials:
       - usernamePassword:
           id: "my-git-credentials"
-          password: "{AQAAABAAAABgVAXxB/9h7jDP/Wp9iWqSjdzN/wZIeL5a1VA99EEvTpiwJjspPzQSj0i7aOSWcbAZxqZ7p8M3l+ejWAJHqRGjdFMjO5vHZJ3mKJNL7DxDpb8cr7UsR6giO8EzaYfn4Gp0v9o4sDbtphvKAqDd+F8cnw==}"
+          password: "{AQAAABAAAABgt0pe2WHex5V9ftH3lMbH1h397BQWkIRlTJDjN2zlKD0qGvREP7en/zAMHVUzntokECNEfJZgEA1ERO+lK/27B6CpzfMVUQ9h7iEhbV60P/+M6fOVl2H/umRfZl0IurombeRqTc5KE4GinQliovpOTA==}"
           scope: GLOBAL
           username: "huyvu8051"
       - usernamePassword:
           id: "nexus-credentials"
-          password: "{AQAAABAAAABAu0+ye/jfaN7GJcfkKQw7FW+6Cw1kB6sI8btZiIr//rabIx9m2KhpU4rdmapf4oM3QXJgu3LlPPi+/MRXORrNyOO5nRFU3kzjg2tRL1PnZCQ=}"
+          password: "{AQAAABAAAABA80lYPVwJ3eUVDcmeRIdrCV6827NaxJLdqa5s3gIqTGy6nPpe6So12mKTSuO4rlUmYjeUZ/f+Hvv98VKlQerYa3NinOcaDdAwFiECDM+YMn0=}"
           scope: GLOBAL
           username: "huyvu8051"
       - usernamePassword:
           id: "docker-credentials"
-          password: "{AQAAABAAAAAw2eR+HOQeCJsIYBLYGpzmuKmH4sjwDI8nN87vi3FvPakdFTjXqzZs+1DQJtz8JJtLLTi1hRN783pZ4H87KYSM4w==}"
+          password: "{AQAAABAAAAAwIKGR9qx7pdKnbzTWBg6UtTra7fNf6EYkIMyliN0/DQf4INTyhI8nJw29f/JAvuglZQdYZZe2eIeNXAyMqzVOzw==}"
           scope: GLOBAL
           username: "huyvu8051"
 jenkins:
@@ -37,12 +37,12 @@ jenkins:
           image: "huyvu8051/tiptalk-build-webapp:latest"
           mounts:
           - "type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock"
-          - "type=volume,source=maven_cache,destination=/home/jenkins/.m2"
-          - "type=volume,source=npm_cache,destination=/home/jenkins/.npm"
+          - "type=volume,source=maven_cache,destination=/root/.m2"
+          - "type=volume,source=npm_cache,destination=/root/.npm"
           mountsString: |-
             type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
-            type=volume,source=maven_cache,destination=/home/jenkins/.m2
-            type=volume,source=npm_cache,destination=/home/jenkins/.npm
+            type=volume,source=maven_cache,destination=/root/.m2
+            type=volume,source=npm_cache,destination=/root/.npm
         labelString: "graalvm-native-image"
         pullStrategy: PULL_ALWAYS
         pullTimeout: 300
@@ -56,8 +56,7 @@ jenkins:
   - "jenkins.diagnostics.ControllerExecutorsAgents"
   labelAtoms:
   - name: "built-in"
-  - name: "docker-00001fdde7fcz"
-  - name: "docker-00001fg4nn1w0"
+  - name: "docker-00001dpzu4o0v"
   - name: "graalvm-native-image"
   markupFormatter: "plainText"
   mode: NORMAL
