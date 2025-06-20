@@ -1,19 +1,35 @@
 pipeline {
-    agent { label 'graalvm-native-image' }
+    agent none // No default agent for the entire pipeline
 
     stages {
-        stage('Clone Repository') {
+        stage('Wake graalvm-native-image Agent') {
+            agent { label 'wol-xeon'} // Run on any available agent (e.g., Jenkins master)
             steps {
-                // Get code from the tiptalk GitHub repository
+                // sh 'wakeonlan 00:e3:4f:98:35:15' // Replace with your MAC address
+                // Optional: Wait for the agent to come online
+                sh 'sleep 70' // Adjust delay as needed (e.g., 30-60 seconds)
+                script {
+                    // Verify agent is online
+                    def node = Jenkins.instance.getNode('graalvm-native-image')
+                    if (!node.isOnline()) {
+                        error "graalvm-native-image agent is not online after wake-up"
+                    }
+                }
+            }
+        }
+
+        stage('Clone Repository') {
+            agent { label 'graalvm-native-image' }
+            steps {
                 git url: 'https://github.com/huyvu8051/tiptalk.git', branch: 'main', credentialsId: 'my-git-credentials'
             }
         }
 
         stage('Build Images') {
+            agent { label 'graalvm-native-image' }
             parallel {
                 stage('Build backend Image') {
                     steps {
-                        // Change to the tiptalk-back directory where the Spring Boot project is located
                         dir('tiptalk-back') {
                             sh '''
                             mvn clean -X
@@ -22,16 +38,13 @@ pipeline {
                         }
                     }
                 }
-
                 stage('Build frontend Image') {
                     steps {
-                        // Change to the tiptalk-front directory where the Angular project is located
                         dir('tiptalk-front') {
-                            // Build Angular project and create Docker image
                             sh '''
-                                npm i --loglevel verbose
-                                npm run build --verbose --prod
-                                docker build -t huyvu8051/tiptalk-front:latest .
+                            npm i --loglevel verbose
+                            npm run build --verbose --prod
+                            docker build -t huyvu8051/tiptalk-front:latest .
                             '''
                         }
                     }
@@ -40,24 +53,20 @@ pipeline {
         }
 
         stage('Prepare and Push Frontend Artifacts to GitHub') {
+            agent { label 'graalvm-native-image' }
             steps {
                 dir('tiptalk-front/dist/tiptalk-front/browser') {
-                    // Copy index.html to 404.html
                     sh 'cp index.html 404.html'
-                    
-                    // Create CNAME file with content
                     sh 'echo "tiptalk.huyvu.asia" > CNAME'
-                    
-                    // Configure Git and force push to tiptalk-front-ghp repository
                     withCredentials([usernamePassword(credentialsId: 'my-git-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                         sh '''
-                            git init
-                            git config user.name "Jenkins"
-                            git config user.email "jenkins@ci-server"
-                            git add .
-                            git commit -m "Deploy frontend artifacts to GitHub Pages"
-                            git remote add origin https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/huyvu8051/tiptalk-front-ghp.git
-                            git push --force origin HEAD:main
+                        git init
+                        git config user.name "Jenkins"
+                        git config user.email "jenkins@ci-server"
+                        git add .
+                        git commit -m "Deploy frontend artifacts to GitHub Pages"
+                        git remote add origin https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/huyvu8051/tiptalk-front-ghp.git
+                        git push --force origin HEAD:main
                         '''
                     }
                 }
@@ -65,33 +74,34 @@ pipeline {
         }
 
         stage('Docker Push') {
+            agent { label 'graalvm-native-image' }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh '''
-                        docker tag tiptalk-native:latest huyvu8051/tiptalk-native:latest
-                        docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-                        docker push huyvu8051/tiptalk-native:latest
-                        docker push huyvu8051/tiptalk-front:latest
+                    docker tag tiptalk-native:latest huyvu8051/tiptalk-native:latest
+                    docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+                    docker push huyvu8051/tiptalk-native:latest
+                    docker push huyvu8051/tiptalk-front:latest
                     '''
                 }
             }
         }
 
         stage('Trigger Render Deployment') {
+            agent { label 'graalvm-native-image' }
             steps {
                 sh 'curl -X GET https://api.render.com/deploy/srv-d0etruemcj7s7387v980?key=WU5nW2vD3fY'
                 sh 'curl -X GET https://api.render.com/deploy/srv-d151cq3e5dus7395ib60?key=_Bi7X--llVY'
             }
         }
     }
+
     post {
         success {
-            // Archive test results and artifacts from the tiptalk-back directory
             dir('tiptalk-back') {
                 junit 'target/surefire-reports/TEST-*.xml'
                 archiveArtifacts 'target/*.jar'
             }
-            // Archive Angular build artifacts
             dir('tiptalk-front') {
                 archiveArtifacts 'dist/**/*'
             }
