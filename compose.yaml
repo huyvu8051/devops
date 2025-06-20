@@ -37,7 +37,18 @@ services:
   #      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mydatabase
   #      - SERVER_TOMCAT_THREADS_MAX=4
   #      - SPRING_DATA_JPA_REPOSITORIES_BOOTSTRAP_MODE=lazy
-
+  zerotier:
+    image: zerotier/zerotier:latest
+    container_name: zerotier
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - ZEROTIER_API_SECRET=${ZEROTIER_CENTRAL_TOKEN}
+    command: ["9e1948db634960b5"]
 
   postgres:
     container_name: postgres
@@ -216,7 +227,6 @@ volumes:
   minio_data:
   jenkins_home:
   agent-workdir:
-
 networks:
   cloudflare:
 
