@@ -26,9 +26,9 @@ pipeline {
         }
 
         stage('Build Images') {
-            agent { label 'graalvm-native-image' }
             parallel {
                 stage('Build backend Image') {
+                    agent { label 'graalvm-native-image' }
                     steps {
                         dir('tiptalk-back') {
                             sh '''
@@ -39,6 +39,7 @@ pipeline {
                     }
                 }
                 stage('Build frontend Image') {
+                    agent { label 'graalvm-native-image' }
                     steps {
                         dir('tiptalk-front') {
                             sh '''
