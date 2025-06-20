@@ -3,7 +3,7 @@ pipeline {
 
     stages {
         stage('Wake graalvm-native-image Agent') {
-            agent { label 'wol-xeon'} // Run on any available agent (e.g., Jenkins master)
+            // agent { label 'wol-xeon'} // Run on any available agent (e.g., Jenkins master)
             steps {
                 sh 'wakeonlan 00:e3:4f:98:35:15' // Replace with your MAC address
                 // Optional: Wait for the agent to come online
