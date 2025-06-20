@@ -3,18 +3,20 @@ credentials:
     domainCredentials:
     - credentials:
       - usernamePassword:
+          description: "my-git-credentials"
           id: "my-git-credentials"
-          password: "{AQAAABAAAABgt0pe2WHex5V9ftH3lMbH1h397BQWkIRlTJDjN2zlKD0qGvREP7en/zAMHVUzntokECNEfJZgEA1ERO+lK/27B6CpzfMVUQ9h7iEhbV60P/+M6fOVl2H/umRfZl0IurombeRqTc5KE4GinQliovpOTA==}"
+          password: "{AQAAABAAAABgJuItW+W+AOSQZYab0fms6+NtyktWDkGX6n3IKtPQuOzJm9g+kiJKgAAOw8cJNuJvHXZAoPIdSSY7/CSi/ItRk/rM6dYJ8lODzenFOOKF1tnc4UxG9ICO2VWlqWl0GJoejVAZJSYZTcPyFWXDwmRc9Q==}"
           scope: GLOBAL
           username: "huyvu8051"
       - usernamePassword:
           id: "nexus-credentials"
-          password: "{AQAAABAAAABA80lYPVwJ3eUVDcmeRIdrCV6827NaxJLdqa5s3gIqTGy6nPpe6So12mKTSuO4rlUmYjeUZ/f+Hvv98VKlQerYa3NinOcaDdAwFiECDM+YMn0=}"
+          password: "{AQAAABAAAACAVB7LSpCFtZgE+i0rsSFJ5bVHITz1BdkzTv7gZmSyFywq0awZRPLZeAfv9sWhUxOL9cyqm2Qef2NmThZQVciauuhptE9hnLGVXhfza+faYZAbYjKYCaCTFTczipPDbysrbXkln9Ow0i4Uwz5iHGhDojK5wqwKonmyZ8qFD/ciE8JrdM45xNZDawweia/LokVQ}"
           scope: GLOBAL
           username: "huyvu8051"
       - usernamePassword:
+          description: "docker-credentials"
           id: "docker-credentials"
-          password: "{AQAAABAAAAAwIKGR9qx7pdKnbzTWBg6UtTra7fNf6EYkIMyliN0/DQf4INTyhI8nJw29f/JAvuglZQdYZZe2eIeNXAyMqzVOzw==}"
+          password: "{AQAAABAAAAAwBJSkVQf+xcG1zTW7gVlyYLNz3rilnY2Mq4RThhT0pm/PXjg56nK6C/1RnmOXTrx/riJUaTfpayU5FoaKi61twQ==}"
           scope: GLOBAL
           username: "huyvu8051"
 jenkins:
@@ -28,7 +30,31 @@ jenkins:
         dockerHost:
           uri: "unix:///var/run/docker.sock"
         readTimeout: 60
-      name: "xeon-docker"
+      name: "macos-docker-cloud"
+      templates:
+      - connector: "attach"
+        dockerTemplateBase:
+          cpuPeriod: 0
+          cpuQuota: 0
+          image: "huyvu8051/tiptalk-build-webapp:latest"
+          mounts:
+          - "type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock"
+          - "type=volume,source=maven_cache,destination=/root/.m2"
+          - "type=volume,source=npm_cache,destination=/root/.npm"
+          mountsString: |-
+            type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
+            type=volume,source=maven_cache,destination=/root/.m2
+            type=volume,source=npm_cache,destination=/root/.npm
+        labelString: "graalvm-native-image-2"
+        pullStrategy: PULL_ALWAYS
+        pullTimeout: 300
+  - docker:
+      dockerApi:
+        connectTimeout: 60
+        dockerHost:
+          uri: "tcp://10.147.19.41:2375"
+        readTimeout: 60
+      name: "xeon-docker-cloud"
       templates:
       - connector: "attach"
         dockerTemplateBase:
@@ -56,8 +82,9 @@ jenkins:
   - "jenkins.diagnostics.ControllerExecutorsAgents"
   labelAtoms:
   - name: "built-in"
-  - name: "docker-00001dpzu4o0v"
   - name: "graalvm-native-image"
+  - name: "graalvm-native-image-2"
+  - name: "xeon-node"
   markupFormatter: "plainText"
   mode: NORMAL
   myViewsTabBar: "standard"
@@ -72,6 +99,12 @@ jenkins:
       freeSpaceThreshold: "1GiB"
       freeSpaceWarningThreshold: "2GiB"
   - "responseTime"
+  nodes:
+  - permanent:
+      launcher: "inbound"
+      name: "xeon-node"
+      remoteFS: "/home/jenkins"
+      retentionStrategy: "always"
   numExecutors: 2
   primaryView:
     all:
@@ -117,6 +150,8 @@ appearance:
   pipelineGraphView:
     showGraphOnBuildPage: false
     showGraphOnJobPage: false
+    showStageDurations: false
+    showStageNames: false
   prism:
     theme: PRISM
   themeManager:
