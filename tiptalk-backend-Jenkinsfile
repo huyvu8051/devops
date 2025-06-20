@@ -1,5 +1,5 @@
 pipeline {
-    agent none // No default agent for the entire pipeline
+    agent { label 'wol-xeon'}
 
     stages {
         stage('Wake graalvm-native-image Agent') {
