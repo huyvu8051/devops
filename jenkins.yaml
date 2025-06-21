@@ -5,13 +5,13 @@ credentials:
       - usernamePassword:
           description: "my-git-credentials"
           id: "my-git-credentials"
-          password: "{AQAAABAAAABglBidVVJQDjWSPJAtwBvWgvD61drmSzj10l8fRohYjFBNHArtEgPidxSa9kHKdqYb9GqRRWvXbc9mFYp4FmHHO8QCZH8qWnsUUcHUj7XqZBu6iWYRnoQprnLTlSIQvvnYK+6SykppoA2ByDyt6g4ZmQ==}"
+          password: "{AQAAABAAAABgUVLH6sFXVYngGo+1nOJs78cBFJMdP83+jO6ZyLid6U4BpKhBBCuS6RNgsazDo8kRNnXhtBDKy7A+vzrICCdVevBRwG3MH5ZvIm33Zu4Kg1mUSsGhw14EOq9LsfKjS71AiQVXFZKnVXcjiKkkNH+NbA==}"
           scope: GLOBAL
           username: "huyvu8051"
       - usernamePassword:
           description: "docker-credentials"
           id: "docker-credentials"
-          password: "{AQAAABAAAAAw1WsWmzNu5Gx8BCuCtZ0ZXmKDkapw7f3DhydqVBTJp6wV6hnRXElRCUKNxrmyDN5gJ0TgZAOhyGriYm70a1WldQ==}"
+          password: "{AQAAABAAAAAwQcbKBEicNrmeeqk1kd6q/bDM6cm+VKEPuJ5niokTFTJRVcDLRQooSKAstHMyLCAtJFs/6gZLM+t6n5vSr8EMsw==}"
           scope: GLOBAL
           username: "huyvu8051"
 jenkins:
@@ -29,9 +29,15 @@ jenkins:
       templates:
       - connector: "attach"
         dockerTemplateBase:
+          capabilitiesToAdd:
+          - "NET_BROADCAST"
+          - "NET_RAW"
+          capabilitiesToAddString: |-
+            NET_BROADCAST
+            NET_RAW
           cpuPeriod: 0
           cpuQuota: 0
-          image: "huyvu8051/tiptalk-build-webapp:latest"
+          image: "huyvu8051/jenkins-wol-agent:latest"
           mounts:
           - "type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock"
           - "type=volume,source=maven_cache,destination=/root/.m2"
@@ -40,7 +46,8 @@ jenkins:
             type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
             type=volume,source=maven_cache,destination=/root/.m2
             type=volume,source=npm_cache,destination=/root/.npm
-        labelString: "wol-xeon"
+          network: "host"
+        labelString: "wol-sender"
         pullStrategy: PULL_ALWAYS
         pullTimeout: 300
   - docker:
@@ -49,6 +56,7 @@ jenkins:
         dockerHost:
           uri: "tcp://10.147.19.41:2375"
         readTimeout: 60
+      errorDuration: 30
       name: "xeon-docker-cloud"
       templates:
       - connector: "attach"
@@ -77,8 +85,11 @@ jenkins:
   - "jenkins.diagnostics.ControllerExecutorsAgents"
   labelAtoms:
   - name: "built-in"
+  - name: "docker-0009o1sbi5jkm"
+  - name: "docker-0009o37n7ad0q"
+  - name: "docker-0009o3bm2kom1"
   - name: "graalvm-native-image"
-  - name: "wol-xeon"
+  - name: "wol-sender"
   markupFormatter: "plainText"
   mode: NORMAL
   myViewsTabBar: "standard"
