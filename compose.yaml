@@ -210,13 +210,16 @@ services:
       - cloudflare
 
   jenkins-agent:
+    container_name: jenkins-agent
     image: jenkins/inbound-agent:latest
     restart: unless-stopped
     environment:
       JENKINS_URL: https://jenkins.huyvu.asia/
-      JENKINS_AGENT_NAME: docker-agent
+      JENKINS_AGENT_NAME: xeon-node
       JENKINS_SECRET: ${JENKINS_SECRET}
       JENKINS_WEB_SOCKET: "true"
+      JENKINS_JAVA_OPTS: "-Dorg.jenkinsci.remoting.engine.JnlpProtocol3.allow=true -Dorg.jenkinsci.remoting.Logger=FINE -Djava.util.logging.ConsoleHandler.level=ALL"
+      JENKINS_AGENT_WORKDIR: "/home/jenkins"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - agent-workdir:/home/jenkins
