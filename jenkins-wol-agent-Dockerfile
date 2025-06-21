@@ -1,0 +1,16 @@
+
+FROM jenkins/inbound-agent:latest-jdk17
+
+USER root
+
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+    wakeonlan etherwake iputils-ping \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY wol.sh /usr/local/bin/wol
+RUN chmod +x /usr/local/bin/wol
+
+USER jenkins
+
