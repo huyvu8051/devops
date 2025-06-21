@@ -5,18 +5,13 @@ credentials:
       - usernamePassword:
           description: "my-git-credentials"
           id: "my-git-credentials"
-          password: "{AQAAABAAAABgJuItW+W+AOSQZYab0fms6+NtyktWDkGX6n3IKtPQuOzJm9g+kiJKgAAOw8cJNuJvHXZAoPIdSSY7/CSi/ItRk/rM6dYJ8lODzenFOOKF1tnc4UxG9ICO2VWlqWl0GJoejVAZJSYZTcPyFWXDwmRc9Q==}"
-          scope: GLOBAL
-          username: "huyvu8051"
-      - usernamePassword:
-          id: "nexus-credentials"
-          password: "{AQAAABAAAACAVB7LSpCFtZgE+i0rsSFJ5bVHITz1BdkzTv7gZmSyFywq0awZRPLZeAfv9sWhUxOL9cyqm2Qef2NmThZQVciauuhptE9hnLGVXhfza+faYZAbYjKYCaCTFTczipPDbysrbXkln9Ow0i4Uwz5iHGhDojK5wqwKonmyZ8qFD/ciE8JrdM45xNZDawweia/LokVQ}"
+          password: "{AQAAABAAAABglBidVVJQDjWSPJAtwBvWgvD61drmSzj10l8fRohYjFBNHArtEgPidxSa9kHKdqYb9GqRRWvXbc9mFYp4FmHHO8QCZH8qWnsUUcHUj7XqZBu6iWYRnoQprnLTlSIQvvnYK+6SykppoA2ByDyt6g4ZmQ==}"
           scope: GLOBAL
           username: "huyvu8051"
       - usernamePassword:
           description: "docker-credentials"
           id: "docker-credentials"
-          password: "{AQAAABAAAAAwBJSkVQf+xcG1zTW7gVlyYLNz3rilnY2Mq4RThhT0pm/PXjg56nK6C/1RnmOXTrx/riJUaTfpayU5FoaKi61twQ==}"
+          password: "{AQAAABAAAAAw1WsWmzNu5Gx8BCuCtZ0ZXmKDkapw7f3DhydqVBTJp6wV6hnRXElRCUKNxrmyDN5gJ0TgZAOhyGriYm70a1WldQ==}"
           scope: GLOBAL
           username: "huyvu8051"
 jenkins:
@@ -45,7 +40,7 @@ jenkins:
             type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
             type=volume,source=maven_cache,destination=/root/.m2
             type=volume,source=npm_cache,destination=/root/.npm
-        labelString: "graalvm-native-image-2"
+        labelString: "wol-xeon"
         pullStrategy: PULL_ALWAYS
         pullTimeout: 300
   - docker:
@@ -83,8 +78,7 @@ jenkins:
   labelAtoms:
   - name: "built-in"
   - name: "graalvm-native-image"
-  - name: "graalvm-native-image-2"
-  - name: "xeon-node"
+  - name: "wol-xeon"
   markupFormatter: "plainText"
   mode: NORMAL
   myViewsTabBar: "standard"
@@ -99,12 +93,6 @@ jenkins:
       freeSpaceThreshold: "1GiB"
       freeSpaceWarningThreshold: "2GiB"
   - "responseTime"
-  nodes:
-  - permanent:
-      launcher: "inbound"
-      name: "xeon-node"
-      remoteFS: "/home/jenkins"
-      retentionStrategy: "always"
   numExecutors: 2
   primaryView:
     all:
