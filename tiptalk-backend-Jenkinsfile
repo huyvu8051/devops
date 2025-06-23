@@ -3,132 +3,114 @@ pipeline {
 
     stages {
         stage('Trigger wol-xeon Pipeline') {
-            agent any  // Có thể chạy trên bất kỳ agent nào
+            agent { label 'wol-sender' }
             steps {
-                // Chạy pipeline wol-xeon và đợi cho đến khi hoàn thành
                 build job: 'wol-xeon', wait: true
             }
         }
 
-        stage('Clone Repository') {
-            agent { label 'graalvm-native-image' }  // Bắt đầu sử dụng agent graalvm-native-image từ đây
-            steps {
-                // Get code from the tiptalk GitHub repository  
-                git url: 'https://github.com/huyvu8051/tiptalk.git', branch: 'main', credentialsId: 'my-git-credentials'
-                
-                // Stash source code để các parallel stage khác có thể sử dụng
-                stash name: 'source-code', includes: '**/*'
-            }
-        }
-
-        stage('Build Images') {
-            parallel {
-                stage('Build backend Image') {
-                    agent { label 'graalvm-native-image' }
+        stage('Build and Deploy') {
+            agent { label 'graalvm-native-image' }
+            stages {
+                stage('Clone Repository') {
                     steps {
-                        // Unstash source code
-                        unstash 'source-code'
-                        
-                        // Change to the tiptalk-back directory where the Spring Boot project is located
-                        dir('tiptalk-back') {
-                            sh '''
-                            mvn clean -X
-                            mvn -Pnative -Dspring-boot.build-image.imageName=tiptalk-native:latest spring-boot:build-image -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSSZ
-                            '''
-                        }
-                        
-                        // Stash backend artifacts for later use
-                        stash name: 'backend-artifacts', includes: 'tiptalk-back/target/**/*'
+                        git url: 'https://github.com/huyvu8051/tiptalk.git', branch: 'main', credentialsId: 'my-git-credentials'
                     }
                 }
 
-                stage('Build frontend Image') {
-                    agent { label 'graalvm-native-image' }
-                    steps {
-                        // Unstash source code
-                        unstash 'source-code'
-                        
-                        // Change to the tiptalk-front directory where the Angular project is located
-                        dir('tiptalk-front') {
-                            // Build Angular project and create Docker image
-                            sh '''
-                                npm i --loglevel verbose
-                                npm run build --verbose --prod
-                                docker build -t huyvu8051/tiptalk-front:latest .
-                            '''
+                stage('Build Images') {
+                    parallel {
+                        stage('Backend') {
+                            stages {
+                                stage('Build Backend Image') {
+                                    steps {
+                                        dir('tiptalk-back') {
+                                            sh '''
+                                            mvn clean -X
+                                            mvn -Pnative -Dspring-boot.build-image.imageName=tiptalk-native:latest spring-boot:build-image -Dorg.slf4j.simpleLogger.showDateTime=true -Dorg.slf4j.simpleLogger.dateTimeFormat=HH:mm:ss.SSSZ
+                                            '''
+                                        }
+                                    }
+                                }
+                                stage('Push Backend Image') {
+                                    steps {
+                                        withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                                            sh '''
+                                            docker tag tiptalk-native:latest huyvu8051/tiptalk-native:latest
+                                            docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+                                            docker push huyvu8051/tiptalk-native:latest
+                                            '''
+                                        }
+                                    }
+                                }
+                                
+                                stage('Trigger Render Deployment') {
+                                    steps {
+                                        sh 'curl -X GET https://api.render.com/deploy/srv-d0etruemcj7s7387v980?key=WU5nW2vD3fY'
+                                        sh 'curl -X GET https://api.render.com/deploy/srv-d151cq3e5dus7395ib60?key=_Bi7X--llVY'
+                                    }
+                                }
+                            }
                         }
-                        
-                        // Stash frontend build artifacts for later use
-                        stash name: 'frontend-dist', includes: 'tiptalk-front/dist/**/*'
+                        stage('Frontend') {
+                            stages {
+                                stage('Build Frontend Image') {
+                                    steps {
+                                        dir('tiptalk-front') {
+                                            sh '''
+                                            npm i --loglevel verbose
+                                            npm run build --verbose --prod
+                                            docker build -t huyvu8051/tiptalk-front:latest .
+                                            '''
+                                        }
+                                    }
+                                }
+                                stage('Push Frontend Image') {
+                                    steps {
+                                        withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                                            sh '''
+                                            docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+                                            docker push huyvu8051/tiptalk-front:latest
+                                            '''
+                                        }
+                                    }
+                                }
+                                stage('Deploy Frontend to GitHub Pages') {
+                                    steps {
+                                        dir('tiptalk-front/dist/tiptalk-front/browser') {
+                                            sh 'cp index.html 404.html'
+                                            sh 'echo "tiptalk.huyvu.asia" > CNAME'
+                                            withCredentials([usernamePassword(credentialsId: 'my-git-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                                                sh '''
+                                                git init
+                                                git config user.name "Jenkins"
+                                                git config user.email "jenkins@ci-server"
+                                                git add .
+                                                git commit -m "Deploy frontend artifacts to GitHub Pages"
+                                                git remote add origin https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/huyvu8051/tiptalk-front-ghp.git
+                                                git push --force origin HEAD:main
+                                                '''
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        stage('Prepare and Push Frontend Artifacts to GitHub') {
-            agent { label 'graalvm-native-image' }
-            steps {
-                // Unstash frontend build artifacts
-                unstash 'frontend-dist'
                 
-                dir('tiptalk-front/dist/tiptalk-front/browser') {
-                    // Copy index.html to 404.html
-                    sh 'cp index.html 404.html'
-                    
-                    // Create CNAME file with content
-                    sh 'echo "tiptalk.huyvu.asia" > CNAME'
-                    
-                    // Configure Git and force push to tiptalk-front-ghp repository
-                    withCredentials([usernamePassword(credentialsId: 'my-git-credentials', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                        sh '''
-                            git init
-                            git config user.name "Jenkins"
-                            git config user.email "jenkins@ci-server"
-                            git add .
-                            git commit -m "Deploy frontend artifacts to GitHub Pages"
-                            git remote add origin https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/huyvu8051/tiptalk-front-ghp.git
-                            git push --force origin HEAD:main
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Docker Push') {
-            agent { label 'graalvm-native-image' }
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh '''
-                        docker tag tiptalk-native:latest huyvu8051/tiptalk-native:latest
-                        docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-                        docker push huyvu8051/tiptalk-native:latest
-                        docker push huyvu8051/tiptalk-front:latest
-                    '''
-                }
-            }
-        }
-
-        stage('Trigger Render Deployment') {
-            agent { label 'graalvm-native-image' }
-            steps {
-                sh 'curl -X GET https://api.render.com/deploy/srv-d0etruemcj7s7387v980?key=WU5nW2vD3fY'
-                sh 'curl -X GET https://api.render.com/deploy/srv-d151cq3e5dus7395ib60?key=_Bi7X--llVY'
             }
         }
     }
+
     post {
         success {
             node('graalvm-native-image') {
-                // Unstash backend and frontend artifacts
-                unstash 'backend-artifacts'
-                unstash 'frontend-dist'
-                
-                // Archive test results and artifacts from the tiptalk-back directory
                 dir('tiptalk-back') {
                     junit 'target/surefire-reports/TEST-*.xml'
                     archiveArtifacts 'target/*.jar'
                 }
-                // Archive Angular build artifacts
                 dir('tiptalk-front') {
                     archiveArtifacts 'dist/**/*'
                 }
