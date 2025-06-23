@@ -43,11 +43,19 @@ pipeline {
                                         }
                                     }
                                 }
-                                
                                 stage('Trigger Render Deployment') {
                                     steps {
                                         sh 'curl -X GET https://api.render.com/deploy/srv-d0etruemcj7s7387v980?key=WU5nW2vD3fY'
                                         sh 'curl -X GET https://api.render.com/deploy/srv-d151cq3e5dus7395ib60?key=_Bi7X--llVY'
+                                    }
+                                }
+                                stage('Gather Backend Test Reports') {
+                                    steps {
+                                        dir('tiptalk-back') {
+                                            sh 'tree -L 5 || find . -maxdepth 5'
+                                            junit 'target/surefire-reports/TEST-*.xml'
+                                            archiveArtifacts 'target/*.jar'
+                                        }
                                     }
                                 }
                             }
@@ -94,12 +102,18 @@ pipeline {
                                         }
                                     }
                                 }
+                                stage('Gather Frontend Dist') {
+                                    steps {
+                                        dir('tiptalk-front') {
+                                            sh 'tree -L 5 || find . -maxdepth 5'
+                                            archiveArtifacts 'dist/**'
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
-
-                
             }
         }
     }
@@ -107,13 +121,17 @@ pipeline {
     post {
         success {
             node('graalvm-native-image') {
-                dir('tiptalk-back') {
-                    junit 'target/surefire-reports/TEST-*.xml'
-                    archiveArtifacts 'target/*.jar'
-                }
-                dir('tiptalk-front') {
-                    archiveArtifacts 'dist/**/*'
-                }
+                echo 'Build and deployment completed successfully.'
+            }
+        }
+        failure {
+            node('graalvm-native-image') {
+                echo 'Build or deployment failed.'
+            }
+        }
+        always {
+            node('graalvm-native-image') {
+                cleanWs()
             }
         }
     }
