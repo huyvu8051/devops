@@ -5,15 +5,25 @@ credentials:
       - usernamePassword:
           description: "my-git-credentials"
           id: "my-git-credentials"
-          password: "{AQAAABAAAABgUVLH6sFXVYngGo+1nOJs78cBFJMdP83+jO6ZyLid6U4BpKhBBCuS6RNgsazDo8kRNnXhtBDKy7A+vzrICCdVevBRwG3MH5ZvIm33Zu4Kg1mUSsGhw14EOq9LsfKjS71AiQVXFZKnVXcjiKkkNH+NbA==}"
+          password: "{AQAAABAAAABglGx/AV8KDpEvnkusbiELCwBlZgXQNhvZy+7Y+JOqUe1CF7pj7IDWYqP7NnUavZab70TcZR7hA6UyqEQI+9RIh50sldQFZ/jCRMcgIfiNAi3tZsCCU7FZ0a6o0TiNQKFgSt1e3JxhHK1+dqTge/rePg==}"
           scope: GLOBAL
           username: "huyvu8051"
       - usernamePassword:
           description: "docker-credentials"
           id: "docker-credentials"
-          password: "{AQAAABAAAAAwQcbKBEicNrmeeqk1kd6q/bDM6cm+VKEPuJ5niokTFTJRVcDLRQooSKAstHMyLCAtJFs/6gZLM+t6n5vSr8EMsw==}"
+          password: "{AQAAABAAAAAwJfv87jzUnzX4DkYLbEde7zfX86RNyhLWb2R2PvcwI0sFfIRkmUrdC+FmMOt+QL0Ts6wbxGO5Z0a82x4JGh5wfw==}"
           scope: GLOBAL
           username: "huyvu8051"
+      - usernamePassword:
+          description: "sonarcloud"
+          id: "sonarcloud"
+          password: "{AQAAABAAAAAg/vNC9ZhBygQDafEQVOLhXQWp8gci8GJhoUqTq6QEwisoLf+TMbooPhOaOZ2B7d0X}"
+          scope: GLOBAL
+      - string:
+          description: "Sentry Auth Token for source map uploads"
+          id: "sentry-auth-token"
+          scope: GLOBAL
+          secret: "{AQAAABAAAADApuFNKmFSTNap6pboQOhteFHr2vjQ9PtkHfawXZjQB+6v8hJZW5R5VvknzSxfIoUiErtn8cFfNHVO+47KF34ZqHEw7Yy0lAewC3O4AfLJhdksS5EcSuhLCKC96cfMg2WyXQbVXVb9p16H5lrMQiVFgsXxsBlMRQ6a6A4VeygnME/h8uBiyGRZVUgAaXQHFNuWTOaT1C8+oWo/KKBQJp3zxHJQZiRwahHv7IWO1O7ecHYR5fQaNpXZvlUOdg4791FzsET1+xVNk5i1iFbGMVVY7g==}"
 jenkins:
   authorizationStrategy:
     loggedInUsersCanDoAnything:
@@ -75,6 +85,15 @@ jenkins:
         labelString: "graalvm-native-image"
         pullStrategy: PULL_ALWAYS
         pullTimeout: 300
+      - connector: "attach"
+        dockerTemplateBase:
+          cpuPeriod: 0
+          cpuQuota: 0
+          image: "huyvu8051/tiptalk-xk6:latest"
+        labelString: "k6-stress-test"
+        name: "k6-stress-test"
+        pullStrategy: PULL_ALWAYS
+        pullTimeout: 300
   crumbIssuer:
     standard:
       excludeClientIPFromCrumb: false
@@ -85,10 +104,8 @@ jenkins:
   - "jenkins.diagnostics.ControllerExecutorsAgents"
   labelAtoms:
   - name: "built-in"
-  - name: "docker-0009o1sbi5jkm"
-  - name: "docker-0009o37n7ad0q"
-  - name: "docker-0009o3bm2kom1"
   - name: "graalvm-native-image"
+  - name: "k6-stress-test"
   - name: "wol-sender"
   markupFormatter: "plainText"
   mode: NORMAL
@@ -167,6 +184,8 @@ security:
     allowedOnController: false
   gitHostKeyVerificationConfiguration:
     sshHostKeyVerificationStrategy: "knownHostsFileVerificationStrategy"
+  sSHD:
+    port: -1
   scriptApproval:
     forceSandbox: false
 unclassified:
@@ -203,6 +222,27 @@ unclassified:
   fingerprints:
     fingerprintCleanupDisabled: false
     storage: "file"
+  ghprbTrigger:
+    autoCloseFailedPullRequests: false
+    cron: "H/5 * * * *"
+    extensions:
+    - ghprbSimpleStatus:
+        addTestResults: false
+        showMatrixStatus: false
+    githubAuth:
+    - credentialsId: "my-git-credentials"
+      description: "Anonymous connection"
+      id: "a9756279-d824-45ca-8b33-aa4d4d8d3f5b"
+      secret: "{AQAAABAAAAAQuk9onjm/ljo1NXdZpepM/Tjy6BrPWE2RM3icWB7A93o=}"
+      serverAPIUrl: "https://api.github.com"
+    manageWebhooks: true
+    okToTestPhrase: ".*ok\\W+to\\W+test.*"
+    requestForTestingPhrase: "Can one of the admins verify this patch?"
+    retestPhrase: ".*test\\W+this\\W+please.*"
+    skipBuildPhrase: ".*\\[skip\\W+ci\\].*"
+    useComments: false
+    useDetailedComments: false
+    whitelistPhrase: ".*add\\W+to\\W+whitelist.*"
   gitHubConfiguration:
     apiRateLimitChecker: ThrottleForNormalize
   gitHubPluginConfig:
@@ -239,6 +279,14 @@ unclassified:
     hideCredentials: false
     showEntireCommitSummaryInChanges: false
     useExistingAccountWithSameEmail: false
+  sonarGlobalConfiguration:
+    buildWrapperEnabled: false
+    installations:
+    - name: "sonarcloud"
+      serverUrl: "https://sonarcloud.io/"
+      triggers:
+        skipScmCause: false
+        skipUpstreamCause: false
   timestamper:
     allPipelines: false
     elapsedTimeFormat: "'<b>'HH:mm:ss.S'</b> '"
